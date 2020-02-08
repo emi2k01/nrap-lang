@@ -16,10 +16,8 @@ pub struct Parser {
     errors: Vec<ParserError>,
 }
 
-// TODO: I'm pretty sure I forgot to do something here so checking all the code
-// is necessary to spot errors and gaps for improvement (not hard)
-// TODO: I remember something, the errors must be handle. Right now everything
-// returns ParserError::Generic. We need to add helpful and informative errors
+// TODO: Right now everything returns ParserError::Generic. We need to add helpful and informative
+// errors
 impl Parser {
     pub fn new(lexer: Lexer) -> Self {
         let mut parser = Self {
@@ -472,7 +470,7 @@ mod tests {
     }
 
     #[test]
-    fn test_ident_error() {
+    fn test_ident_start_with_number_error() {
         let mut parser = Parser::new(Lexer::new("123notallowed"));
         let result = parser
             .parse_ident()
