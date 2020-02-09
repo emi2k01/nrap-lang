@@ -8,5 +8,7 @@ mod lexer;
 mod token;
 mod error;
 mod parser;
+mod compiler;
+mod bytecode;
 
 use lexer::Lexer;
