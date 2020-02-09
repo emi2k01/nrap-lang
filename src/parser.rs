@@ -1,19 +1,19 @@
 use crate::{
     ast::*,
-    error::ParserError,
+    error::ParseError,
     Lexer,
     token::{Token, Kind, Span},
 };
 
 use crate::macros::*;
 
-pub type ParserResult<T> = Result<T, ParserError>;
+pub type ParseResult<T> = Result<T, ParseError>;
 
 pub struct Parser {
     lexer: Lexer,
     current_token: Token,
     peek_token: Token,
-    errors: Vec<ParserError>,
+    errors: Vec<ParseError>,
 }
 
 // TODO: Right now everything returns ParserError::Generic. We need to add helpful and informative
@@ -31,7 +31,7 @@ impl Parser {
         parser
     }
 
-    pub fn parse(&mut self) -> ParserResult<Program> {
+    pub fn parse(&mut self) -> ParseResult<Program> {
         let mut program: Program = vec![];
         while !current_token_is!(self, EOF) {
             let procedure = self.parse_procedure()?;
@@ -41,7 +41,7 @@ impl Parser {
         Ok(program)
     }
 
-    fn parse_procedure(&mut self) -> ParserResult<Statement> {
+    fn parse_procedure(&mut self) -> ParseResult<Statement> {
         expect_current_token!(self, Procedure)?;
 
         let ident = self.parse_ident()?;
@@ -59,7 +59,7 @@ impl Parser {
         })
     }
 
-    fn parse_block(&mut self) -> ParserResult<BlockStatement> {
+    fn parse_block(&mut self) -> ParseResult<BlockStatement> {
         expect_current_token!(self, LBrace)?;
 
         let mut statements: Vec<Statement> = vec![];
@@ -73,13 +73,13 @@ impl Parser {
                     } else if peek_token_is!(self, Equal) || peek_token_is!(self, LBracket) {
                         self.parse_assignment_statement()?
                     } else {
-                        return Err(ParserError::Generic);
+                        return Err(ParseError::Generic);
                     }
                 }
                 Kind::If => self.parse_if_statement()?,
                 Kind::Loop => self.parse_loop_statement()?,
                 Kind::Break => self.parse_break_if_statement()?,
-                _ => return Err(ParserError::Generic),
+                _ => return Err(ParseError::Generic),
             };
             statements.push(statement);
             self.advance();
@@ -88,7 +88,7 @@ impl Parser {
         Ok(statements)
     }
 
-    fn parse_call_statement(&mut self) -> ParserResult<Statement> {
+    fn parse_call_statement(&mut self) -> ParseResult<Statement> {
         let proc = self.parse_ident()?;
 
         expect_peek_token!(self, LParen)?;
@@ -112,7 +112,7 @@ impl Parser {
         }))
     }
 
-    fn parse_loop_statement(&mut self) -> ParserResult<Statement> {
+    fn parse_loop_statement(&mut self) -> ParseResult<Statement> {
         expect_current_token!(self, Loop)?;
 
         let body = self.parse_block()?;
@@ -120,7 +120,7 @@ impl Parser {
         Ok(Statement::Loop { body })
     }
 
-    fn parse_break_if_statement(&mut self) -> ParserResult<Statement> {
+    fn parse_break_if_statement(&mut self) -> ParseResult<Statement> {
         expect_current_token!(self, Break)?;
         expect_current_token!(self, If)?;
 
@@ -130,7 +130,7 @@ impl Parser {
         Ok(Statement::BreakIf { condition })
     }
 
-    fn parse_if_statement(&mut self) -> ParserResult<Statement> {
+    fn parse_if_statement(&mut self) -> ParseResult<Statement> {
         expect_current_token!(self, If)?;
 
         let condition = self.parse_expr(Precedence::Lowest)?;
@@ -152,7 +152,7 @@ impl Parser {
         })
     }
 
-    fn parse_assignment_statement(&mut self) -> ParserResult<Statement> {
+    fn parse_assignment_statement(&mut self) -> ParseResult<Statement> {
         let ident = self.parse_ident()?;
         let index = if peek_token_is!(self, LBracket) {
             self.advance(); // current_token = LBracket
@@ -178,7 +178,7 @@ impl Parser {
         })
     }
 
-    fn parse_parameters(&mut self) -> ParserResult<Vec<Parameter>> {
+    fn parse_parameters(&mut self) -> ParseResult<Vec<Parameter>> {
         expect_current_token!(self, LParen)?;
 
         let mut params: Vec<Parameter> = vec![];
@@ -200,7 +200,7 @@ impl Parser {
         Ok(params)
     }
 
-    fn parse_parameter(&mut self) -> ParserResult<Parameter> {
+    fn parse_parameter(&mut self) -> ParseResult<Parameter> {
         let mut is_in = if current_token_is!(self, In) {
             self.advance();
             true
@@ -224,12 +224,12 @@ impl Parser {
         })
     }
 
-    fn parse_ident(&mut self) -> ParserResult<String> {
+    fn parse_ident(&mut self) -> ParseResult<String> {
         let ident_value = get_current_token!(self, @Ident)?;
         Ok(ident_value)
     }
 
-    pub fn parse_expr(&mut self, precedence: Precedence) -> ParserResult<Expression> {
+    pub fn parse_expr(&mut self, precedence: Precedence) -> ParseResult<Expression> {
         let mut left = match self.current_token.kind {
             Kind::FloatLit(_) => self.parse_float_expr()?,
             Kind::BoolLit(_) => self.parse_bool_expr()?,
@@ -237,7 +237,7 @@ impl Parser {
             Kind::Bang | Kind::Minus | Kind::Plus => self.parse_prefix_expr()?,
             Kind::Ident(_) => self.parse_ident_expr()?,
             Kind::LParen => self.parse_grouped_expr()?,
-            _ => return Err(ParserError::Generic),
+            _ => return Err(ParseError::Generic),
         };
 
         while !peek_token_is!(self, Semicolon) && precedence < self.peek_token_precedence() {
@@ -263,19 +263,19 @@ impl Parser {
                     self.advance();
                     left = self.parse_index_expr(left)?
                 }
-                _ => return Err(ParserError::Generic),
+                _ => return Err(ParseError::Generic),
             }
         }
 
         Ok(left)
     }
 
-    fn parse_prefix_expr(&mut self) -> ParserResult<Expression> {
+    fn parse_prefix_expr(&mut self) -> ParseResult<Expression> {
         let op = match self.current_token.kind {
             Kind::Bang => PrefixOp::Not,
             Kind::Plus => PrefixOp::Pos,
             Kind::Minus => PrefixOp::Neg,
-            _ => return Err(ParserError::Generic),
+            _ => return Err(ParseError::Generic),
         };
         self.advance();
         Ok(Expression::Prefix {
@@ -284,7 +284,7 @@ impl Parser {
         })
     }
 
-    fn parse_infix_expr(&mut self, left: Expression) -> ParserResult<Expression> {
+    fn parse_infix_expr(&mut self, left: Expression) -> ParseResult<Expression> {
         let infix_precedence = self.current_token_precedence();
         let op = match self.current_token.kind {
             Kind::Plus => InfixOp::Sum,
@@ -301,7 +301,7 @@ impl Parser {
             Kind::LessThanEqual => InfixOp::LessThanEqual,
             Kind::And => InfixOp::And,
             Kind::Or => InfixOp::Or,
-            _ => return Err(ParserError::Generic),
+            _ => return Err(ParseError::Generic),
         };
         self.advance();
         let right = self.parse_expr(infix_precedence)?;
@@ -312,21 +312,21 @@ impl Parser {
         })
     }
 
-    fn parse_index_expr(&mut self, ident: Expression) -> ParserResult<Expression> {
+    fn parse_index_expr(&mut self, ident: Expression) -> ParseResult<Expression> {
         let ident = match ident {
             Expression::Ident(v) => v,
-            _ => return Err(ParserError::Generic),
+            _ => return Err(ParseError::Generic),
         };
         expect_current_token!(self, LBracket)?;
         if current_token_is!(self, RBracket) {
-            return Err(ParserError::Generic);
+            return Err(ParseError::Generic);
         }
         let indices = self.parse_arguments()?;
         expect_peek_token!(self, RBracket)?;
         Ok(Expression::Index { ident, indices })
     }
 
-    fn parse_arguments(&mut self) -> ParserResult<Vec<Expression>> {
+    fn parse_arguments(&mut self) -> ParseResult<Vec<Expression>> {
         let mut args: Vec<Expression> = vec![];
         loop {
             let arg = self.parse_expr(Precedence::Lowest)?;
@@ -340,11 +340,11 @@ impl Parser {
         Ok(args)
     }
 
-    fn parse_ident_expr(&mut self) -> ParserResult<Expression> {
+    fn parse_ident_expr(&mut self) -> ParseResult<Expression> {
         Ok(Expression::Ident(self.parse_ident()?))
     }
 
-    fn parse_grouped_expr(&mut self) -> ParserResult<Expression> {
+    fn parse_grouped_expr(&mut self) -> ParseResult<Expression> {
         expect_current_token!(self, LParen)?;
 
         let expr = self.parse_expr(Precedence::Lowest)?;
@@ -352,17 +352,17 @@ impl Parser {
         Ok(expr)
     }
 
-    fn parse_float_expr(&mut self) -> ParserResult<Expression> {
+    fn parse_float_expr(&mut self) -> ParseResult<Expression> {
         let float = get_current_token!(self, @FloatLit)?;
         Ok(Expression::Float(float))
     }
 
-    fn parse_string_expr(&mut self) -> ParserResult<Expression> {
+    fn parse_string_expr(&mut self) -> ParseResult<Expression> {
         let string = get_current_token!(self, @StringLit)?;
         Ok(Expression::String(string))
     }
 
-    fn parse_bool_expr(&mut self) -> ParserResult<Expression> {
+    fn parse_bool_expr(&mut self) -> ParseResult<Expression> {
         let bool = get_current_token!(self, @BoolLit)?;
         Ok(Expression::Bool(bool))
     }

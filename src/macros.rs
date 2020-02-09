@@ -2,7 +2,7 @@
 macro_rules! expect_current_token {
     ($self:ident, @$token:ident) => {{
         {
-            use crate::error::ParserError;
+            use crate::error::ParseError;
             use crate::token::Kind;
             let tok = $self.current_token.kind.clone();
             match tok {
@@ -10,13 +10,13 @@ macro_rules! expect_current_token {
                     $self.advance();
                     Ok(v)
                 }
-                _ => Err(ParserError::Generic),
+                _ => Err(ParseError::Generic),
             }
         }
     }};
     ($self:ident, $token:ident) => {{
         {
-            use crate::error::ParserError;
+            use crate::error::ParseError;
             use crate::token::Kind;
             let tok = $self.current_token.kind.clone();
             match tok {
@@ -24,7 +24,7 @@ macro_rules! expect_current_token {
                     $self.advance();
                     Ok(())
                 }
-                _ => Err(ParserError::Generic),
+                _ => Err(ParseError::Generic),
             }
         }
     }};
@@ -34,7 +34,7 @@ macro_rules! expect_current_token {
 macro_rules! expect_peek_token {
     ($self:ident, @$token:ident) => {{
         {
-            use crate::error::ParserError;
+            use crate::error::ParseError;
             use crate::token::Kind;
             let tok = $self.peek_token.kind.clone();
             match tok {
@@ -42,13 +42,13 @@ macro_rules! expect_peek_token {
                     $self.advance();
                     Ok(v)
                 }
-                _ => Err(ParserError::Generic),
+                _ => Err(ParseError::Generic),
             }
         }
     }};
     ($self:ident, $token:ident) => {{
         {
-            use crate::error::ParserError;
+            use crate::error::ParseError;
             use crate::token::Kind;
             let tok = $self.peek_token.kind.clone();
             match tok {
@@ -56,7 +56,7 @@ macro_rules! expect_peek_token {
                     $self.advance();
                     Ok(())
                 }
-                _ => Err(ParserError::Generic),
+                _ => Err(ParseError::Generic),
             }
         }
     }};
@@ -66,23 +66,23 @@ macro_rules! expect_peek_token {
 macro_rules! get_current_token {
     ($self:ident, @$token:ident) => {{
         {
-            use crate::error::ParserError;
+            use crate::error::ParseError;
             use crate::token::Kind;
             let tok = $self.current_token.kind.clone();
             match tok {
                 Kind::$token(v) => Ok(v),
-                _ => Err(ParserError::Generic),
+                _ => Err(ParseError::Generic),
             }
         }
     }};
     ($self:ident, $token:ident) => {{
         {
-            use crate::error::ParserError;
+            use crate::error::ParseError;
             use crate::token::Kind;
             let tok = $self.current_token.kind.clone();
             match tok {
                 Kind::$token => Ok(()),
-                _ => Err(ParserError::Generic),
+                _ => Err(ParseError::Generic),
             }
         }
     }};
@@ -92,23 +92,23 @@ macro_rules! get_current_token {
 macro_rules! get_peek_token {
     ($self:ident, @$token:ident) => {{
         {
-            use crate::error::ParserError;
+            use crate::error::ParseError;
             use crate::token::Kind;
             let tok = $self.peek_token.kind.clone();
             match tok {
                 Kind::$token(v) => Ok(v),
-                _ => Err(ParserError::Generic),
+                _ => Err(ParseError::Generic),
             }
         }
     }};
     ($self:ident, $token:ident) => {{
         {
-            use crate::error::ParserError;
+            use crate::error::ParseError;
             use crate::token::Kind;
             let tok = $self.peek_token.kind.clone();
             match tok {
                 Kind::$token => Ok(()),
-                _ => Err(ParserError::Generic),
+                _ => Err(ParseError::Generic),
             }
         }
     }};
