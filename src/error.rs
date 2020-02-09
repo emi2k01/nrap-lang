@@ -7,13 +7,19 @@ pub enum LexicalError {
 }
 
 #[derive(Error, Debug)]
-pub enum ParserError {
+pub enum ParseError {
     Generic,
 }
 
-impl fmt::Display for ParserError {
+#[derive(Error, Debug)]
+pub enum CompileError {
+    #[error("main procedure not present")]
+    NoMainFound,
+}
+
+impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use ParserError as PE;
+        use ParseError as PE;
         match &self {
             PE::Generic => write!(f, "There's an error in your program"),
         }
