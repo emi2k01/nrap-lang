@@ -194,7 +194,7 @@ impl Lexer {
             if escaping {
                 string.push(match c {
                     'n' => '\n',
-                    c@_ => c,
+                    c => c,
                 });
                 escaping = false;
                 self.read_char();
