@@ -551,6 +551,12 @@ mod tests {
     }
 
     #[test]
+    fn test_infix_same_precedence_expr() {
+        let mut parser = Parser::new(Lexer::new("2*2*2"));
+        parser.parse_expr(Precedence::Lowest).unwrap();
+    }
+
+    #[test]
     fn test_not_prefix_expr() {
         let mut parser = Parser::new(Lexer::new("!true"));
         let result = parser
